@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/favourite"
+        android:icon="@drawable/icon_favou"
+        android:title="Favourite"
+        app:cnb_backgroundColor="#00BCD4"
+        app:cnb_iconColor="#FFFFFF"  />
+    <item
+        android:id="@+id/category"
+        android:icon="@drawable/ic_icon_category"
+        android:title="Category"
+        app:cnb_backgroundColor="#00BCD4"
+        app:cnb_iconColor="#FFFFFF" />
+</menu>
