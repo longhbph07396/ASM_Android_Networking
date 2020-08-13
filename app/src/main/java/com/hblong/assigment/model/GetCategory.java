@@ -21,7 +21,8 @@ public class GetCategory {
             }
 
             public class Avatar {
-                public String url_m;
+                public int height_t,width_t,height_s,width_s,height_m,width_m,height_o,width_o;
+                public String url_m,url_t,url_s,url_o;
             }
 
         }

@@ -29,9 +29,23 @@ public interface FlickService {
 
     @GET("services/rest/")
     Call<GetListImageCallerie> getListPhotoByCategory(@Query("gallery_id") String gallery_id,
-                                               @Query("nojsoncallback") String nojsoncallback,
-                                               @Query("extras") String extras,
-                                               @Query("format") String format,
-                                               @Query("api_key") String api_key,
-                                               @Query("method") String method);
+                                                      @Query("nojsoncallback") String nojsoncallback,
+                                                      @Query("extras") String extras,
+                                                      @Query("format") String format,
+                                                      @Query("api_key") String api_key,
+                                                      @Query("method") String method,
+                                                      @Query("page") int page,
+                                                      @Query("per_page") int per_page);
+
+    @GET("services/rest/")
+    Call<GetFavourite> getTag(@Query("extras") String extras,
+                                   @Query("nojsoncallback") String nojsoncallback,
+                                   @Query("tags") String tags,
+                                   @Query("format") String format,
+                                   @Query("api_key") String api_key,
+                                   @Query("method") String method,
+                                   @Query("page") int page,
+                                   @Query("per_page") int per_page);
+
+
 }

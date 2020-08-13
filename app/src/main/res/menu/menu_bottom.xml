@@ -4,13 +4,13 @@
     <item
         android:id="@+id/favourite"
         android:icon="@drawable/icon_favou"
-        android:title="Favourite"
-        app:cnb_backgroundColor="#00BCD4"
-        app:cnb_iconColor="#FFFFFF"  />
+        android:title="Favourite" />
     <item
         android:id="@+id/category"
         android:icon="@drawable/ic_icon_category"
-        android:title="Category"
-        app:cnb_backgroundColor="#00BCD4"
-        app:cnb_iconColor="#FFFFFF" />
+        android:title="Category" />
+    <item
+        android:id="@+id/seach"
+        android:icon="@drawable/ic_baseline_search_24"
+        android:title="Seach" />
 </menu>

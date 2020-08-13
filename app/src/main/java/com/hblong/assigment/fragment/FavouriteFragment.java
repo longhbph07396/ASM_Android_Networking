@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -37,46 +38,39 @@ public class FavouriteFragment extends Fragment {
     public static final int FRAGMENT_CODE = 0;
     private RecyclerView recyclerView;
     private SwipeRefreshLayout swipeRefreshLayout;
-    private static final String FULL_EXTRAS = "views,url_z,url_l";
+    private static final String FULL_EXTRAS = "views, media, path_alias, url_sq, url_t, url_s, url_q, url_m, url_n, url_z, url_c, url_l, url_o";
     private static final String USER_ID = "189494349@N08";
     private static final String KEY_TOKEN = "e8ec0403444db0ad6be941eab1962c79";
     private static final String GET_FAVO = "flickr.favorites.getList";
-    private int page = 1;
-    private int perpage = 100;
     private ImageAdapter imageAdapter;
     private List<ImageFavourite> imageFavourites;
-    private List<ImageFavourite> imageFavouriteList;
-
+    private int pagee;
     private StaggeredGridLayoutManager manager;
+    private ProgressBar progressBar;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = LayoutInflater.from(getContext()).inflate(R.layout.fragment_favourite, container, false);
         initView(view);
-        getData(perpage);
-        swipeRefreshLayout.setOnRefreshListener(() -> {
-            for (int i = 0; i < 5; i++) {
-                imageFavourites.add(imageFavouriteList.get(imageFavourites.size() + i));
-                imageAdapter.notifyDataSetChanged();
-            }
-            swipeRefreshLayout.setRefreshing(false);
-        });
+        getData(false);
         return view;
     }
 
-    private void getData(int a) {
+    private void getData(boolean clearData) {
         Retrofit retrofit = new Retrofit.Builder().baseUrl("https://www.flickr.com").addConverterFactory(GsonConverterFactory.create()).build();
         FlickService flickrService = retrofit.create(FlickService.class);
-        flickrService.getListFavo(FULL_EXTRAS, "1", USER_ID, "json", KEY_TOKEN, GET_FAVO, page, a).enqueue(new Callback<GetFavourite>() {
+        flickrService.getListFavo(FULL_EXTRAS, "1", USER_ID, "json", KEY_TOKEN, GET_FAVO, 1, 6).enqueue(new Callback<GetFavourite>() {
             @Override
             public void onResponse(Call<GetFavourite> call, Response<GetFavourite> response) {
-                imageFavouriteList = response.body().photos.photo;
-                for (int i = 0; i < 10; i++) {
-                    imageFavourites.add(imageFavouriteList.get(i));
-                    imageAdapter.notifyDataSetChanged();
+                if (clearData) {
+                    imageFavourites.clear();
                 }
-
+                imageFavourites.addAll(response.body().photos.photo);
+                imageAdapter.notifyDataSetChanged();
+                if (clearData) {
+                    swipeRefreshLayout.setRefreshing(false);
+                }
             }
 
             @Override
@@ -90,6 +84,7 @@ public class FavouriteFragment extends Fragment {
         imageFavourites = new ArrayList<>();
         recyclerView = view.findViewById(R.id.rcv_images);
         swipeRefreshLayout = view.findViewById(R.id.swiperefresh);
+        progressBar = view.findViewById(R.id.progressBar);
 
 
         imageAdapter = new ImageAdapter(getContext(), imageFavourites, FRAGMENT_CODE);
@@ -97,7 +92,47 @@ public class FavouriteFragment extends Fragment {
         manager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
         recyclerView.setLayoutManager(manager);
 
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                getData(true);
+                pagee=1;
+            }
+        });
 
+        addScrollListener();
 
+    }
+
+    private void addScrollListener() {
+        EndlessRecyclerViewScrollListener endlessRecyclerViewScrollListener = new EndlessRecyclerViewScrollListener(manager) {
+            @Override
+            public void onLoadMore(int page, int totalItemsCount, RecyclerView view) {
+                progressBar.setVisibility(View.VISIBLE);
+
+                if (pagee == 1) {
+                    page =1;
+                } else {
+                    page++;
+                    pagee = page;
+                }
+                Retrofit retrofit = new Retrofit.Builder().baseUrl("https://www.flickr.com").addConverterFactory(GsonConverterFactory.create()).build();
+                FlickService flickrService = retrofit.create(FlickService.class);
+                flickrService.getListFavo(FULL_EXTRAS, "1", USER_ID, "json", KEY_TOKEN, GET_FAVO, 2 + pagee, 3).enqueue(new Callback<GetFavourite>() {
+                    @Override
+                    public void onResponse(Call<GetFavourite> call, Response<GetFavourite> response) {
+                        imageFavourites.addAll(response.body().photos.photo);
+                        imageAdapter.notifyDataSetChanged();
+                        progressBar.setVisibility(View.GONE);
+                    }
+
+                    @Override
+                    public void onFailure(Call<GetFavourite> call, Throwable t) {
+                        Log.e("longhb", t.getMessage());
+                    }
+                });
+            }
+        };
+        recyclerView.addOnScrollListener(endlessRecyclerViewScrollListener);
     }
 }

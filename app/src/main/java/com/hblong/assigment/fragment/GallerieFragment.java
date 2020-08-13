@@ -21,7 +21,9 @@ import com.hblong.assigment.model.GetFavourite;
 import com.hblong.assigment.model.GetListImageCallerie;
 import com.hblong.assigment.model.ImageFavourite;
 import com.hblong.assigment.service.FlickService;
+import com.hblong.assigment.utils.EndlessRecyclerViewScrollListener;
 
+import java.sql.Struct;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,7 +38,8 @@ public class GallerieFragment extends Fragment {
     private SwipeRefreshLayout swiperefresh;
     private RecyclerView rcvImages;
     private ProgressBar progressBar;
-    private List<GetListImageCallerie.Photos.PhoTo> phoTos;
+    private List<GetListImageCallerie.Photos.PhoTo> phoTos = new ArrayList<>();
+    private StaggeredGridLayoutManager manager;
 
     private String GALLERY_ID;
     private static final String KEY_TOKEN = "e8ec0403444db0ad6be941eab1962c79";
@@ -54,20 +57,24 @@ public class GallerieFragment extends Fragment {
         View view = LayoutInflater.from(getContext()).inflate(R.layout.fragment_favourite, container, false);
         initView(view);
         Log.e("longhb", GALLERY_ID);
-        getData();
+        getData(false);
         return view;
     }
 
-    private void getData() {
+    private void getData(boolean clear) {
         Retrofit retrofit = new Retrofit.Builder().baseUrl("https://www.flickr.com").addConverterFactory(GsonConverterFactory.create()).build();
         FlickService flickrService = retrofit.create(FlickService.class);
-        flickrService.getListPhotoByCategory(GALLERY_ID, "1", FULL_EXTRAS, "json", KEY_TOKEN, GET_FAVO).enqueue(new Callback<GetListImageCallerie>() {
+        flickrService.getListPhotoByCategory(GALLERY_ID, "1", FULL_EXTRAS, "json", KEY_TOKEN, GET_FAVO, 1, 6).enqueue(new Callback<GetListImageCallerie>() {
             @Override
             public void onResponse(Call<GetListImageCallerie> call, Response<GetListImageCallerie> response) {
-                phoTos = response.body().photos.photo;
-                imageAdapter = new ImageAdapter(FRAGMENT_CODE, getContext(), phoTos);
-                rcvImages.setAdapter(imageAdapter);
-                rcvImages.setLayoutManager(new StaggeredGridLayoutManager(2,StaggeredGridLayoutManager.VERTICAL));
+                if (clear) {
+                    phoTos.clear();
+                }
+                phoTos.addAll(response.body().photos.photo);
+                imageAdapter.notifyDataSetChanged();
+                if (clear) {
+                    swiperefresh.setRefreshing(false);
+                }
             }
 
             @Override
@@ -81,6 +88,43 @@ public class GallerieFragment extends Fragment {
         swiperefresh = view.findViewById(R.id.swiperefresh);
         rcvImages = view.findViewById(R.id.rcv_images);
         progressBar = view.findViewById(R.id.progressBar);
+        manager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
+        imageAdapter = new ImageAdapter(FRAGMENT_CODE, getContext(), phoTos);
+        rcvImages.setAdapter(imageAdapter);
+        rcvImages.setLayoutManager(manager);
+        addScrollListener();
 
+        swiperefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                getData(true);
+            }
+        });
+    }
+
+    private void addScrollListener() {
+        EndlessRecyclerViewScrollListener endlessRecyclerViewScrollListener = new EndlessRecyclerViewScrollListener(manager) {
+            @Override
+            public void onLoadMore(int page, int totalItemsCount, RecyclerView view) {
+                progressBar.setVisibility(View.VISIBLE);
+                page++;
+                Retrofit retrofit = new Retrofit.Builder().baseUrl("https://www.flickr.com").addConverterFactory(GsonConverterFactory.create()).build();
+                FlickService flickrService = retrofit.create(FlickService.class);
+                flickrService.getListPhotoByCategory(GALLERY_ID, "1", FULL_EXTRAS, "json", KEY_TOKEN, GET_FAVO, 2+page, 3).enqueue(new Callback<GetListImageCallerie>() {
+                    @Override
+                    public void onResponse(Call<GetListImageCallerie> call, Response<GetListImageCallerie> response) {
+                        phoTos.addAll(response.body().photos.photo);
+                        imageAdapter.notifyDataSetChanged();
+                        progressBar.setVisibility(View.GONE);
+                    }
+
+                    @Override
+                    public void onFailure(Call<GetListImageCallerie> call, Throwable t) {
+
+                    }
+                });
+            }
+        };
+        rcvImages.addOnScrollListener(endlessRecyclerViewScrollListener);
     }
 }
